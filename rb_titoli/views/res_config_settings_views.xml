@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.rb.titoli</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='integration']" position="inside">
+                <setting>
+                    <div class="content-group">
+                        <h2>Koala Imports</h2>
+                        <div class="row mt16">
+                            <label for="mode" string="Mode" class="col-lg-3 o_light_label" />
+                            <field name="mode" />
+                        </div>
+                        <div class="row mt16">
+                            <label for="koala_broker_api_key" string="API Key:"
+                                class="col-lg-3 o_light_label" />
+                            <field name="koala_broker_api_key"
+                                placeholder="e.g. d7vctmiv2rwgenebha8bxq7irooudn" />
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>
