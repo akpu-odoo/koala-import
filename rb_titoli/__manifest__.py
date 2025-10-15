@@ -18,6 +18,7 @@
     # Dependency
     "depends": ["base_setup", 'account'],
     "data": [
+        "security/ir.model.access.csv",
         "views/account_journal_views.xml",
         "views/res_config_settings_views.xml",
         "data/service_cron.xml",

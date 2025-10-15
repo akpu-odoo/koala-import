@@ -16,12 +16,14 @@ ENDPOINT = {
         "api_titoli_id": "https://ext.softwarebroker.it/api/Titoli",
         "api_rca_idrca": "https://ext.softwarebroker.it/api/Polizze/Rca",
         "api_vita_idvita": "https://ext.softwarebroker.it/api/Polizze/Vita",
+        "api_client": "https://ext.softwarebroker.it/api/Clienti",
     },
     "production": {
         "api_titoli": "https://ext.softwarebroker.it/api/Titoli",
         "api_titoli_id": "https://ext.softwarebroker.it/api/Titoli",
         "api_rca_idrca": "https://ext.softwarebroker.it/api/Polizze/Rca",
         "api_vita_idvita": "https://ext.softwarebroker.it/api/Polizze/Vita",
+        "api_client": "https://ext.softwarebroker.it/api/Clienti",
     },
 }
 
