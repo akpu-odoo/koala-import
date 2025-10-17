@@ -1,11 +1,10 @@
 from datetime import datetime, timedelta
 import logging
 
-from odoo import api, fields, models
+from odoo import api, fields, models, Command, _
 from odoo.exceptions import UserError
-from rb_titoli.controllers.main import KoalaApiController
+from odoo.addons.rb_titoli.tools.koala_api import KoalaApiController
 
-koala_service = KoalaApiController()
 _logger = logging.getLogger(__name__)
 
 
@@ -111,27 +110,60 @@ class RBTitolo(models.Model):
 
     """When Resolving the Partner if payment resposibility changes for the title( Who is handling the payment ) we need to update the partner"""
     @api.depends("payment_responsibility")
-    def _update_partner_information(self):
+    def update_payment_responsibility(self):
         for record in self:
-            if record.payment_responsibility == "collaborator_pays" and not record.partner_collaboratore_id:
-                policy_data = koala_service._get_itconfiguration(
-                        endpoint_key="api_vita_idvita", record_id=record.idvita
-                    )
-                # Need to check which id to use idgesotre or idcliente
-                client_data = koala_service._get_itconfiguration(endpoint_key='api_client', record_id=policy_data.get('idgestore'))
-                collaborator_id = self.upsert_partner(
-                    name=f"{client_data.get('nome') + client_data.get('cognome')}",
-                    koala_id=policy_data.get('idgestore'),
-                )
-                record.partner_collaboratore_id = collaborator_id
+            if record.payment_responsibility == "collaborator_pays":
+                if not record.partner_collaboratore_id:
+                    partner = record.get_partner_information()
+                    if not partner:
+                        record.payment_responsibility = record._origin.payment_responsibility
+                        continue
+                    record.partner_collaboratore_id = partner
+                partner_id = record.partner_collaboratore_id
+            else:
+                if not record.partner_cliente_id:
+                    partner = record.get_partner_information(is_idvita=False)
+                    if not partner:
+                        record.payment_responsibility = record._origin.payment_responsibility
+                        continue
+                    record.partner_cliente_id = partner
+                partner_id = record.partner_cliente_id
+
+            record.move_id.line_ids.write({"partner_id": partner_id.id})
+
+    @api.model
+    def get_partner_information(self, is_idvita=True):
+        record_id = self.idvita if is_idvita else self.idrca
+        endpoint = "api_vita_idvita" if is_idvita else "api_rca_idrca"
+        if not record_id:
+            raise UserError(_("Not found partner for this responsibility"))
+
+        try:
+            policy_data = KoalaApiController(self.env)._get_itconfiguration(
+                endpoint_key=endpoint, record_id=record_id,
+            )
+            person_id = policy_data.get("idgestore") if is_idvita else policy_data.get("idcliente")
+
+            # API throw 401 unauthorized error: 401 Unauthorized error.
+            client_data = KoalaApiController(self.env)._get_itconfiguration(
+                endpoint_key='api_client', record_id=person_id,
+            )
+
+        except Exception as e:
+            _logger.exception("Error processing title %s: %s", self.koala_titolo_id, e)
+            return None
+
+        return  self.upsert_partner(
+            name=f"{client_data.get('nome', '')} {client_data.get('cognome', '')}".strip(),
+            koala_id=person_id,
+        )
 
     @api.model
     def upsert_partner(self, name, koala_id=None):
         """Get or create res.partner with optional Koala ID and payment responsibility"""
         partner = (
             self.env["res.partner"].search([("koala_id", "=", koala_id)], limit=1)
-            if koala_id
-            else None
+            if koala_id else None
         )
         if not partner:
             partner = self.env["res.partner"].create(
@@ -141,6 +173,7 @@ class RBTitolo(models.Model):
                 }
             )
         return partner
+
     @api.model
     def process_title(self, koala_titolo_records):
         """
@@ -158,11 +191,11 @@ class RBTitolo(models.Model):
             koala_titolo_id = koala_titolo.get("id")
             try:
                 # 1) Title details
-                title_detail = koala_service._get_itconfiguration(
+                title_detail = KoalaApiController(self.env)._get_itconfiguration(
                     endpoint_key="api_titoli_id", record_id=koala_titolo_id
                 )
                 if not title_detail:
-                    raise UserError(f"Title {koala_titolo_id} not found in Koala API")
+                    raise UserError(_(f"Title {koala_titolo_id} not found in Koala API"))
                 if title_detail.get("dataInserimento") and title_detail.get("dataInserimento") <= two_months_ago:
                     continue
 
@@ -172,16 +205,16 @@ class RBTitolo(models.Model):
                 is_collaborator = False
 
                 if idrca:
-                    policy_data = koala_service._get_itconfiguration(
+                    policy_data = KoalaApiController(self.env)._get_itconfiguration(
                         endpoint_key="api_rca_idrca", record_id=idrca
                     )
                 elif idvita:
-                    policy_data = koala_service._get_itconfiguration(
+                    policy_data = KoalaApiController(self.env)._get_itconfiguration(
                         endpoint_key="api_vita_idvita", record_id=idvita
                     )
                     is_collaborator = True
                 else:
-                    raise UserError(f"Title {koala_titolo_id} has no policy reference")
+                    raise UserError(_(f"Title {koala_titolo_id} has no policy reference"))
 
                 if not policy_data:
                     _logger.warning("Skipping title %s due to missing policy data", koala_titolo_id)
@@ -189,9 +222,11 @@ class RBTitolo(models.Model):
 
                 # Fetch the person data depending on collaborator vs client
                 person_id = policy_data.get('idgestore') if is_collaborator else policy_data.get('idcliente')
+
                 client_data = {}
+                # API throw 401 unauthorized error: 401 Unauthorized error.
                 if person_id:
-                    client_data = koala_service._get_itconfiguration(endpoint_key='api_client', record_id=person_id)
+                    client_data = KoalaApiController(self.env)._get_itconfiguration(endpoint_key='api_client', record_id=person_id)
 
                 # Merge person details (name parts etc.) into policy_data for convenience
                 if client_data:
@@ -203,29 +238,29 @@ class RBTitolo(models.Model):
 
             # 3) Prepare titolo values and partners
             rb_vals = self.prepare_values(koala_titolo | title_detail)
-
-            full_name = ((policy_data.get('nome') or '') + ' ' + (policy_data.get('cognome') or '')).strip()
-            client = None
-            collaborator = None
+            full_name = f"{policy_data.get('nome', '')} {policy_data.get('cognome', '')}".strip()
 
             if is_collaborator:
-                collaborator = self.upsert_partner(
-                    name=full_name or policy_data.get('dbOrigineNome') or 'Collaborator',
+                partner = self.upsert_partner(
+                    name=full_name,
                     koala_id=policy_data.get('idgestore'),
                 )
-                rb_vals["partner_collaboratore_id"] = collaborator.id
+                rb_vals["partner_collaboratore_id"] = partner.id
+                rb_vals["payment_responsibility"] = "collaborator_pays"
             else:
-                client = self.upsert_partner(
-                    name=full_name or policy_data.get('dbOrigineNome') or 'Client',
+                partner = self.upsert_partner(
+                    name=full_name,
                     koala_id=policy_data.get('idcliente'),
                 )
-                rb_vals["partner_cliente_id"] = client.id
-
-            move_vals = self.create_account_move(rb_vals, client, collaborator)
+                rb_vals["partner_cliente_id"] = partner.id
+                rb_vals["payment_responsibility"] = "customer_pays"
 
             # 4) Upsert titolo and account move
             rb_record = self.search([("koala_titolo_id", "=", koala_titolo_id)], limit=1)
+            move_vals = self.create_account_move(rb_vals, partner, rb_record)
             if rb_record:
+                if rb_record.move_id.state != 'draft':
+                    continue
                 if rb_record.move_id:
                     rb_record.move_id.write(move_vals)
                 else:
@@ -252,67 +287,94 @@ class RBTitolo(models.Model):
             )
 
     @api.model
-    def create_account_move(self, rb_record, client_partner, collaborator_partner):
+    def create_account_move(self, rb_vals, partner, rb_record=None):
         """
-        Create account.move of type 'entry' for the title
+        Create or update account.move of type 'entry' for the title.
+        If rb_record is passed and has a move_id, update the existing move.
         """
-        # Here we does not need logic to check the payment resposibility, we can only simply use related field to partner_id even if
-        # That changes due to responsibility so that it reflects here as well.
-        payment_responsibility = client_partner.payment_responsibility
-        if (
-            payment_responsibility == "customer_pays"
-            or payment_responsibility == "unknown"
-        ):
-            partner_to_use = client_partner
-        else:
-            partner_to_use = collaborator_partner
-
         journal = self.env["account.journal"].search(
             [("rb_titolo", "=", True)], limit=1
         )
         if not journal:
-            raise UserError("Journal 'RB Titles' not found")
+            raise UserError(_("Journal 'RB Titles' not found"))
+
+        account = self.env["account.account"].search(
+            [("code", "=", "999999")], limit=1
+        )
+        if not account:
+            raise UserError(_("Account with code '999999' not found."))
 
         move_vals = {
             "move_type": "entry",
             "journal_id": journal.id,
-            "date": rb_record.get("data"),
-            "ref": rb_record.get("numero"),
-            "line_ids": [
-                # Partner line
-                (
-                    0,
-                    0,
-                    {
-                        "account_id": self.env["account.account"]
-                        .search([("account_type", "=", "asset_receivable")], limit=1)
-                        .id,
-                        "partner_id": partner_to_use.id,
-                        "name": rb_record.get("numero"),
-                        "debit": rb_record.get("tot_competenze", 0.0),
-                    },
-                ),
-                # Counterpart line
-                (
-                    0,
-                    0,
-                    {
-                        "account_id": self.env["account.account"]
-                        .search([("account_type", "=", "income_other")], limit=1)
-                        .id,
-                        "partner_id": partner_to_use.id,
-                        "name": rb_record.get("numero"),
-                        "credit": rb_record.get("tot_competenze", 0.0),
-                    },
-                ),
-            ],
+            "date": rb_vals.get("data"),
+            "ref": rb_vals.get("numero"),
         }
+
+        # Build line_ids depending on whether we are updating or creating
+        line_vals = []
+
+        if rb_record and rb_record.move_id:
+            move = rb_record.move_id
+            if move.line_ids.filtered(lambda l: l.full_reconcile_id):
+                return move_vals
+            # Partner line
+            partner_line = move.line_ids.filtered(
+                lambda l: l.account_id == partner.property_account_receivable_id
+            )
+            if partner_line:
+                line_vals.append(Command.update(partner_line.id, {
+                    "debit": rb_vals.get("tot_competenze", 0.0),
+                    "name": rb_vals.get("numero"),
+                    "partner_id": partner.id,
+                }))
+            else:
+                line_vals.append(Command.create({
+                    "account_id": partner.property_account_receivable_id.id,
+                    "partner_id": partner.id,
+                    "name": rb_vals.get("numero"),
+                    "debit": rb_vals.get("tot_competenze", 0.0),
+                }))
+
+            # Counterpart line
+            counterpart_line = move.line_ids.filtered(lambda l: l.account_id == account)
+            if counterpart_line:
+                line_vals.append(Command.update(counterpart_line.id, {
+                    "credit": rb_vals.get("tot_competenze", 0.0),
+                    "name": rb_vals.get("numero"),
+                    "partner_id": partner.id,
+                }))
+            else:
+                line_vals.append(Command.create({
+                    "account_id": account.id,
+                    "partner_id": partner.id,
+                    "name": rb_vals.get("numero"),
+                    "credit": rb_vals.get("tot_competenze", 0.0),
+                }))
+        else:
+            # Create new lines
+            line_vals = [
+                Command.create({
+                    "account_id": partner.property_account_receivable_id.id,
+                    "partner_id": partner.id,
+                    "name": rb_vals.get("numero"),
+                    "debit": rb_vals.get("tot_competenze", 0.0),
+                }),
+                Command.create({
+                    "account_id": account.id,
+                    "partner_id": partner.id,
+                    "name": rb_vals.get("numero"),
+                    "credit": rb_vals.get("tot_competenze", 0.0),
+                }),
+            ]
+
+        move_vals["line_ids"] = line_vals
         return move_vals
 
     @api.model
     def _cron_koala_get_titles(self):
         try:
-            records = koala_service._get_itconfiguration(endpoint_key="api_titoli")
+            records = KoalaApiController(self.env)._get_itconfiguration(endpoint_key="api_titoli")
             if records:
                 self.process_title(records)
         except Exception as e:

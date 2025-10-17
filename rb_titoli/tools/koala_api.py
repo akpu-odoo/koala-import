@@ -1,12 +1,7 @@
 import logging
 import requests
 
-from odoo import http
-from odoo.http import request
-
-from odoo.http import request
 from odoo.exceptions import UserError
-
 
 _logger = logging.getLogger(__name__)
 TIMEOUT = 20
@@ -17,6 +12,8 @@ ENDPOINT = {
         "api_rca_idrca": "https://ext.softwarebroker.it/api/Polizze/Rca",
         "api_vita_idvita": "https://ext.softwarebroker.it/api/Polizze/Vita",
         "api_client": "https://ext.softwarebroker.it/api/Clienti",
+        "api_incassi": "https://ext.softwarebroker.it/api/Incassi",
+        "api_incassi_id": "https://ext.softwarebroker.it/api/Incassi",
     },
     "production": {
         "api_titoli": "https://ext.softwarebroker.it/api/Titoli",
@@ -24,23 +21,19 @@ ENDPOINT = {
         "api_rca_idrca": "https://ext.softwarebroker.it/api/Polizze/Rca",
         "api_vita_idvita": "https://ext.softwarebroker.it/api/Polizze/Vita",
         "api_client": "https://ext.softwarebroker.it/api/Clienti",
+        "api_incassi": "https://ext.softwarebroker.it/api/Incassi",
+        "api_incassi_id": "https://ext.softwarebroker.it/api/Incassi",
     },
 }
 
-
-class KoalaApiError(Exception):
-    def init(self, code, message=False):
-        self.code = code
-        self.message = message
-        super().init(message or code)
-
-
-class KoalaApiController(http.Controller):
+class KoalaApiController:
+    def __init__(self, env):
+        self.env = env
 
     def _get_api_key(self):
         """Fetch API key from system parameters"""
         api_key = (
-            request.env["ir.config_parameter"]
+            self.env["ir.config_parameter"]
             .sudo()
             .get_param("rb_titoli.koala_broker_api_key")
         )
@@ -50,7 +43,7 @@ class KoalaApiController(http.Controller):
 
     def _get_mode(self):
         mode = (
-            request.env["ir.config_parameter"].sudo().get_param("rb_titoli.mode")
+            self.env["ir.config_parameter"].sudo().get_param("rb_titoli.mode")
             or "testing"
         )
         if mode not in ENDPOINT:
@@ -76,6 +69,7 @@ class KoalaApiController(http.Controller):
         :param params: optional query parameters as dict
         :return: response data (JSON or text)
         """
+
         mode = self._get_mode()
         url = ENDPOINT[mode].get(endpoint_key)
         if not url:

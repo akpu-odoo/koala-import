@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_rb_pn_line_list" model="ir.ui.view">
+        <field name="name">rb.pn.line.list</field>
+        <field name="model">rb.pn.line</field>
+        <field name="arch" type="xml">
+            <list string="First Note Lines">
+                <field name="date"/>
+                <field name="move_id"/>
+                <field name="company_id"/>
+                <field name="number_of_titles"/>
+                <field name="total_allocated"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rb_pn_line_form" model="ir.ui.view">
+        <field name="name">rb.pn.line.form</field>
+        <field name="model">rb.pn.line</field>
+        <field name="arch" type="xml">
+            <form string="First Note Line" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <field name="move_id" readonly="1"/>
+                        <field name="company_id" readonly="1"/>
+                        <field name="date" readonly="1"/>
+                        <field name="currency_id" readonly="1"/>
+                        <field name="total_allocated" readonly="1"/>
+                        <field name="number_of_titles" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="titolo_ids" widget="many2many_tags" options="{'no_create': True}" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Snapshot">
+                            <field name="titres_snapshot" readonly="1" nolabel="1"/>
+                        </page>
+                        <page string="Notes">
+                            <field name="note" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_rb_pn_line" model="ir.actions.act_window">
+        <field name="name">First Note Lines</field>
+        <field name="res_model">rb.pn.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">First Note Lines (read-only)</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_rb_pn_root" name="Prima Nota" sequence="80"/>
+    <menuitem id="menu_rb_pn_lines" name="First Note Lines" parent="menu_rb_pn_root" action="action_rb_pn_line"/>
+</odoo>
