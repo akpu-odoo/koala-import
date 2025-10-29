@@ -20,6 +20,7 @@
     "data": [
         'security/ir.model.access.csv',
         'views/rb_pn_line_views.xml',
+        'views/mail_message_views.xml',
     ],
     "installable": True,
     "application": True,

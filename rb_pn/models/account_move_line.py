@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
-    incasso_koala_id = fields.Char("Koala Incasso ID", copy=False)
+    incasso_koala_id = fields.Char("Koala Incasso ID", copy=False, tracking=True)
 
     def unlink(self):
         """Extend unlink to also delete Koala incasso records when records are deleted."""
@@ -32,3 +32,8 @@ class AccountMoveLine(models.Model):
                 _logger.error("Failed to delete Koala incasso %s: %s", incasso_id, e)
 
         return res
+
+    def remove_move_reconcile(self):
+        if self and self.move_id:
+            self.env["rb.pn.line"].delete_prima_nota(self)
+        super().remove_move_reconcile()

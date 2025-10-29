@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="account.action_account_audit_trail_report" model="ir.actions.act_window">
+        <field name="domain" eval="[
+            ('message_type', '=', 'notification'),
+            ('model', 'in', ('account.move', 'account.account', 'account.tax', 'res.partner', 'res.company', 'rb.pn.line')),
+        ]"/>
+    </record>
+</odoo>

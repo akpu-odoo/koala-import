@@ -24,6 +24,7 @@ class AccountBankStatementLine(models.Model):
 
         if not titoli_ids:
             return
+        self.env["rb.pn.line"].create_prima_mota(move_line_ids.move_id, list(titoli_ids.keys()))
 
         # idConto and idTipoPagamento has not consider in document.
         payload = {
