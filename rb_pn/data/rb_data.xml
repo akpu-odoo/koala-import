@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="rb_mt_koala_receipt_created" model="mail.message.subtype">
+        <field name="name">Koala Receipt Created</field>
+        <field name="res_model">account.bank.statement.line</field>
+        <field name="default" eval="False"/>
+    </record>
+
+    <record id="rb_mt_first_note_updated" model="mail.message.subtype">
+        <field name="name">First Note Updated</field>
+        <field name="res_model">rb.pn.line</field>
+        <field name="default" eval="False"/>
+    </record>
+</odoo>

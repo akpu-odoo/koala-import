@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_rb_pn_line_search" model="ir.ui.view">
+        <field name="name">rb.pn.line.search</field>
+        <field name="model">rb.pn.line</field>
+        <field name="arch" type="xml">
+            <search string="Search First Note Lines">
+                <field name="date"/>
+                <field name="move_id"/>
+                <field name="company_id"/>
+                <field name="partner_id"/>
+                <group>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                    <filter string="Partner" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="view_rb_pn_line_list" model="ir.ui.view">
         <field name="name">rb.pn.line.list</field>
         <field name="model">rb.pn.line</field>
@@ -8,8 +25,7 @@
                 <field name="date"/>
                 <field name="move_id"/>
                 <field name="company_id"/>
-                <field name="number_of_titles"/>
-                <field name="total_allocated"/>
+                <field name="partner_id"/>
             </list>
         </field>
     </record>
@@ -24,22 +40,21 @@
                         <field name="move_id" readonly="1"/>
                         <field name="company_id" readonly="1"/>
                         <field name="date" readonly="1"/>
-                        <field name="currency_id" readonly="1"/>
-                        <field name="total_allocated" readonly="1"/>
-                        <field name="number_of_titles" readonly="1"/>
+                        <field name="partner_id" readonly="1"/>
                     </group>
-                    <group>
-                        <field name="titolo_ids" widget="many2many_tags" options="{'no_create': True}" readonly="1"/>
-                    </group>
-                    <notebook>
-                        <page string="Snapshot">
-                            <field name="titres_snapshot" readonly="1" nolabel="1"/>
-                        </page>
-                        <page string="Notes">
-                            <field name="note" readonly="1"/>
-                        </page>
-                    </notebook>
                 </sheet>
+                <notebook>
+                    <page string="Paid Titles">
+                        <field name="titolo_ids" readonly="1">
+                            <list string="Titles Paid">
+                                <field name="numero"/>
+                                <field name="data"/>
+                                <field name="competenze"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+                <chatter/>
             </form>
         </field>
     </record>
