@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Reviewers -->
+    <record id="group_rb_titolo_reviewer" model="res.groups">
+        <field name="name">Reviewers</field>
+        <field name="comment">Can change review state, edit review notes, refresh and export.</field>
+    </record>
+
+    <!-- Reconcilers -->
+    <record id="group_rb_titolo_reconciler" model="res.groups">
+        <field name="name">Reconcilers</field>
+        <field name="comment">Can retry alignment but cannot change review state.</field>
+    </record>
+
+    <!-- Administrators -->
+    <record id="group_rb_titolo_admin" model="res.groups">
+        <field name="name">Administrators</field>
+        <field name="implied_ids" eval="[(4, ref('group_rb_titolo_reviewer')), (4, ref('group_rb_titolo_reconciler'))]"/>
+        <field name="comment">Full access to rb.titolo reviews.</field>
+    </record>
+</odoo>

@@ -446,11 +446,12 @@ class RBTitolo(models.Model):
             "val_ritenuta_fornitore": vals.get("valRitenutaFornitore"),
         }
 
-    def action_update_title(self, koala_titolo_id):
+    def action_update_title(self):
         """Update record on button click"""
-        if koala_titolo_id:
-            koala_titolo = [{"id": koala_titolo_id}]
-            self.process_title(koala_titolo)
+        for record in self:
+            if record.koala_titolo_id:
+                koala_titolo = [{"id": record.koala_titolo_id}]
+                self.process_title(koala_titolo)
 
     def _parse_datetime(self, value):
         """Update datetime format"""
