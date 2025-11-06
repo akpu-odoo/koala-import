@@ -4,17 +4,12 @@ from odoo import fields, models, _
 class RBTitolo(models.Model):
     _inherit = 'rb.titolo'
 
-    review_state = fields.Selection([
-        ('to_review', 'To Review'),
-        ('to_check', 'To Check'),
-        ('reviewed', 'Reviewed'),
-    ], string="Review State", default='to_review', tracking=True)
-
     reviewed_by = fields.Many2one('res.users', string="Reviewed By", readonly=True)
     reviewed_on = fields.Datetime(string="Reviewed On", readonly=True)
     review_note = fields.Text(string="Review Note")
 
     # === Actions ===
+
     def action_mark_reviewed(self):
         for record in self:
             record.write({

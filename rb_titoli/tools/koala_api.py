@@ -7,22 +7,24 @@ _logger = logging.getLogger(__name__)
 TIMEOUT = 20
 ENDPOINT = {
     "testing": {
-        "api_titoli": "https://ext.softwarebroker.it/api/Titoli",
+        "api_titoli": "https://ext.softwarebroker.it/api/Titoli?stati=Coperta&stati=Stornata&stati=Franchigia&stati=Giacenza&stati=Sospesa",
         "api_titoli_id": "https://ext.softwarebroker.it/api/Titoli",
         "api_rca_idrca": "https://ext.softwarebroker.it/api/Polizze/Rca",
         "api_vita_idvita": "https://ext.softwarebroker.it/api/Polizze/Vita",
         "api_client": "https://ext.softwarebroker.it/api/Clienti",
         "api_incassi": "https://ext.softwarebroker.it/api/Incassi",
         "api_incassi_id": "https://ext.softwarebroker.it/api/Incassi",
+        "api_gestori_id": "https://ext.softwarebroker.it/api/Gestori",
     },
     "production": {
-        "api_titoli": "https://ext.softwarebroker.it/api/Titoli",
+        "api_titoli": "https://ext.softwarebroker.it/api/Titoli?stati=Coperta&stati=Stornata&stati=Franchigia&stati=Giacenza&stati=Sospesa",
         "api_titoli_id": "https://ext.softwarebroker.it/api/Titoli",
         "api_rca_idrca": "https://ext.softwarebroker.it/api/Polizze/Rca",
         "api_vita_idvita": "https://ext.softwarebroker.it/api/Polizze/Vita",
         "api_client": "https://ext.softwarebroker.it/api/Clienti",
         "api_incassi": "https://ext.softwarebroker.it/api/Incassi",
         "api_incassi_id": "https://ext.softwarebroker.it/api/Incassi",
+        "api_gestori_id": "https://ext.softwarebroker.it/api/Gestori",
     },
 }
 

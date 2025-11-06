@@ -10,6 +10,7 @@ _logger = logging.getLogger(__name__)
 
 class RBTitolo(models.Model):
     _name = "rb.titolo"
+    _inherit = ['mail.thread']
     _description = "RB Titolo"
 
     koala_titolo_id = fields.Integer(string="Koala Title ID", index=True)
@@ -27,6 +28,13 @@ class RBTitolo(models.Model):
     competenze = fields.Float(string="Competenze")
     saldato = fields.Boolean(string="Saldato")
     versato = fields.Boolean(string="Versato")
+    active = fields.Boolean(default=True)
+    last_seen_at = fields.Datetime()
+    review_state = fields.Selection([
+        ('to_review', 'To Review'),
+        ('to_check', 'To Check'),
+        ('reviewed', 'Reviewed'),
+    ], string="Review State", default='to_review', tracking=True)
 
     # Additional fields
     idquietanza = fields.Integer(string="ID Quietanza")
@@ -186,9 +194,10 @@ class RBTitolo(models.Model):
         """
         create_data = []
         two_months_ago = datetime.today() - timedelta(days=60)
-
+        all_koala_ids = []
         for koala_titolo in koala_titolo_records:
             koala_titolo_id = koala_titolo.get("id")
+            all_koala_ids.append(koala_titolo_id)
             try:
                 # 1) Title details
                 title_detail = KoalaApiController(self.env)._get_itconfiguration(
@@ -225,8 +234,10 @@ class RBTitolo(models.Model):
 
                 client_data = {}
                 # API throw 401 unauthorized error: 401 Unauthorized error.
-                if person_id:
-                    client_data = KoalaApiController(self.env)._get_itconfiguration(endpoint_key='api_client', record_id=person_id)
+                if person_id == policy_data.get('idcliente'):
+                    client_data = KoalaApiController(self.env)._get_itconfiguration(endpoint_key='api_client', record_id=policy_data.get('idcliente'))
+                elif person_id == policy_data.get('idgestore'):
+                    client_data = KoalaApiController(self.env)._get_itconfiguration(endpoint_key='api_gestori_id', record_id=policy_data.get('idgestore'))
 
                 # Merge person details (name parts etc.) into policy_data for convenience
                 if client_data:
@@ -239,6 +250,7 @@ class RBTitolo(models.Model):
             # 3) Prepare titolo values and partners
             rb_vals = self.prepare_values(koala_titolo | title_detail)
             full_name = f"{policy_data.get('nome', '')} {policy_data.get('cognome', '')}".strip()
+
 
             if is_collaborator:
                 partner = self.upsert_partner(
@@ -267,6 +279,9 @@ class RBTitolo(models.Model):
                     new_move = self.env["account.move"].create(move_vals)
                     rb_vals["move_id"] = new_move.id
                 rb_record.write(rb_vals)
+                if rb_record.premio_totale == 0 and rb_record.review_state != 'to_check':
+                    rb_record.review_state = 'to_check'
+                    rb_record.message_post(body="This record needs to be reviewed Premio Totale is "+ str(rb_record.premio_totale))
                 _logger.info("------------> update records :- %s <-------------", rb_record.id)
             else:
                 rb_vals["koala_titolo_id"] = koala_titolo_id
@@ -274,6 +289,7 @@ class RBTitolo(models.Model):
                 rb_vals["move_id"] = move_record.id
                 create_data.append(rb_vals)
 
+        self.archive_old_titles(all_koala_ids)
         self.create_koala_titles(create_data)
 
     @api.model
@@ -281,10 +297,25 @@ class RBTitolo(models.Model):
         """Create records for the title"""
         if create_data:
             create_result = self.create(create_data)
+            for record in create_result:
+                if record.premio_totale == 0 and record.review_state != 'to_check':
+                    record.review_state = 'to_check'
+                    record.message_post(body="This record needs to be reviewed Premio Totale is "+ str(record.premio_totale))
             _logger.info(
                 "------------> Created %d rb_titolo records <-------------",
                 len(create_result),
             )
+
+    @api.model
+    def archive_old_titles(self, koala_ids):
+        """Archive old titles that are not in Koala anymore"""
+        records_to_deactivate = self.search([
+            ("koala_titolo_id", "not in", koala_ids),
+            ("active", "=", True),
+        ])
+        if records_to_deactivate:
+            records_to_deactivate.message_post(body="Archived: not present in Koala (404)")
+            records_to_deactivate.write({"active": False})
 
     @api.model
     def create_account_move(self, rb_vals, partner, rb_record=None):
@@ -324,7 +355,7 @@ class RBTitolo(models.Model):
             )
             if partner_line:
                 line_vals.append(Command.update(partner_line.id, {
-                    "debit": rb_vals.get("tot_competenze", 0.0),
+                    "debit": rb_vals.get("premio_totale", 0.0),
                     "name": rb_vals.get("numero"),
                     "partner_id": partner.id,
                 }))
@@ -333,14 +364,14 @@ class RBTitolo(models.Model):
                     "account_id": partner.property_account_receivable_id.id,
                     "partner_id": partner.id,
                     "name": rb_vals.get("numero"),
-                    "debit": rb_vals.get("tot_competenze", 0.0),
+                    "debit": rb_vals.get("premio_totale", 0.0),
                 }))
 
             # Counterpart line
             counterpart_line = move.line_ids.filtered(lambda l: l.account_id == account)
             if counterpart_line:
                 line_vals.append(Command.update(counterpart_line.id, {
-                    "credit": rb_vals.get("tot_competenze", 0.0),
+                    "credit": rb_vals.get("premio_totale", 0.0),
                     "name": rb_vals.get("numero"),
                     "partner_id": partner.id,
                 }))
@@ -349,7 +380,7 @@ class RBTitolo(models.Model):
                     "account_id": account.id,
                     "partner_id": partner.id,
                     "name": rb_vals.get("numero"),
-                    "credit": rb_vals.get("tot_competenze", 0.0),
+                    "credit": rb_vals.get("premio_totale", 0.0),
                 }))
         else:
             # Create new lines
@@ -358,13 +389,13 @@ class RBTitolo(models.Model):
                     "account_id": partner.property_account_receivable_id.id,
                     "partner_id": partner.id,
                     "name": rb_vals.get("numero"),
-                    "debit": rb_vals.get("tot_competenze", 0.0),
+                    "debit": rb_vals.get("premio_totale", 0.0),
                 }),
                 Command.create({
                     "account_id": account.id,
                     "partner_id": partner.id,
                     "name": rb_vals.get("numero"),
-                    "credit": rb_vals.get("tot_competenze", 0.0),
+                    "credit": rb_vals.get("premio_totale", 0.0),
                 }),
             ]
 
@@ -444,6 +475,7 @@ class RBTitolo(models.Model):
             "ultimo_incasso_conto": vals.get("ultimoIncassoConto"),
             "competenze_surplus": vals.get("competenzeSurplus"),
             "val_ritenuta_fornitore": vals.get("valRitenutaFornitore"),
+            "last_seen_at": datetime.now(),
         }
 
     def action_update_title(self):

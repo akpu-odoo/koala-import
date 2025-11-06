@@ -17,7 +17,7 @@
     "website": "https://www.odoo.com",
     "license": "LGPL-3",
     # Dependency
-    "depends": ['rb_pn'],
+    "depends": ['rb_pn', 'rb_titoli'],
     "data": [
         # 'security/rb_titolo_groups.xml',
         # "security/ir.model.access.csv",
