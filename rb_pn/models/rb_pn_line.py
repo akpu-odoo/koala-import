@@ -14,7 +14,6 @@ class RBPNLine(models.Model):
     partner_id = fields.Many2one('res.partner', string='Partner (resolved)', readonly=True)
     date = fields.Date(string='Date', related='move_id.date', store=True, readonly=True)
     currency_id = fields.Many2one('res.currency', string='Currency', related='move_id.currency_id', store=True, readonly=True)
-    # Audit
 
     _sql_constraints = [
         ('rb_pn_line_move_unique', 'unique(move_id)', 'A First Note line already exists for this bank move.'),

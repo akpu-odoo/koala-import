@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_rb_titolo_review_search" model="ir.ui.view">
+        <field name="name">rb.titolo.review.search</field>
+        <field name="model">rb.titolo</field>
+        <field name="arch" type="xml">
+            <search string="Search First Note Lines">
+                <field name="numero"/>
+                <field name="data"/>
+                <field name="competenze"/>
+                <field name="review_state"/>
+                <filter string="Review" name="review" domain="[('review_state', '!=', 'reviewed')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_rb_titolo_review_list" model="ir.ui.view">
+        <field name="name">rb.titolo.review.list</field>
+        <field name="model">rb.titolo</field>
+        <field name="arch" type="xml">
+            <list string="Titles for Review" default_order="review_state">
+                <field name="numero"/>
+                <field name="data"/>
+                <field name="competenze"/>
+                <field name="review_state" widget="badge" />
+                <button name="action_update_title"
+                    string="Update"
+                    type="object"
+                    icon="fa-refresh"
+                    title="Update the Titoli"
+                    class="btn btn-link"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rb_titolo_review_form" model="ir.ui.view">
+        <field name="name">rb.titolo.review.form</field>
+        <field name="model">rb.titolo</field>
+        <field name="arch" type="xml">
+            <form string="Title Review" create="false">
+                <header>
+                    <button name="action_mark_reviewed"
+                            string="Mark as Reviewed"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="review_state != 'to_check'"/>
+
+                    <button name="action_flag_to_check"
+                            string="Flag for Check"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="review_state != 'to_review'"/>
+
+                    <field name="review_state" widget="statusbar" statusbar_visible="to_review,reviewed,to_check"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_first_note_snapshot"
+                            string="First Note"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-file-text"
+                            invisible="not rb_pn_line_id">
+                        </button>
+                        <field name="rb_pn_line_id" invisible="True"/>
+                        <button name="action_update_title"
+                            string="Update"
+                            type="object"
+                            icon="fa-refresh"
+                            title="Update the Titoli"
+                            class="btn btn-link">
+                        </button>
+                    </div>
+                    <group>
+                        <group colspan="2">
+                            <group string="Title Information" >
+                                <field name="numero"/>
+                                <field name="data"/>
+                                <field name="competenze"/>
+                            </group>
+
+                            <group string="Review Details">
+                                <field name="reviewed_by" readonly="1"/>
+                                <field name="reviewed_on" readonly="1"/>
+                                <field name="review_note"/>
+                            </group>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_rb_titoli_review" model="ir.actions.act_window">
+        <field name="name">Title Review</field>
+        <field name="res_model">rb.titolo</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_rb_titolo_review_list"/>
+        <field name="context">{'search_default_review': 1}</field>
+    </record>
+
+    <menuitem id="menu_rb_review_root" name="Review" sequence="80"/>
+    <menuitem id="menu_rb_titolo_review" name="Titles" parent="menu_rb_review_root" action="action_rb_titoli_review"/>
+</odoo>
