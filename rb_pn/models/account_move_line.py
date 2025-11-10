@@ -1,12 +1,14 @@
 import logging
-from odoo import fields, models
+
+from odoo import fields, models, _
+from odoo.exceptions import UserError
 from odoo.addons.rb_titoli.tools.koala_api import KoalaApiController
 
 _logger = logging.getLogger(__name__)
 
 
 class AccountMoveLine(models.Model):
-    _inherit = 'account.move.line'
+    _inherit = "account.move.line"
 
     incasso_koala_id = fields.Char("Koala Incasso ID", copy=False, tracking=True)
 
@@ -24,12 +26,15 @@ class AccountMoveLine(models.Model):
         for incasso_id in incasso_ids:
             try:
                 KoalaApiController(self.env)._delete_itconfiguration(
-                    endpoint_key='api_incassi_id',
-                    record_id=incasso_id
+                    endpoint_key="api_incassi_id", record_id=incasso_id
                 )
                 _logger.info("Deleted Koala incasso %s after record unlink", incasso_id)
             except Exception as e:
-                _logger.error("Failed to delete Koala incasso %s: %s", incasso_id, e)
+                raise UserError(
+                    _(
+                        "Failed to delete Koala incasso, Due to External API issue",
+                    )
+                )
 
         return res
 

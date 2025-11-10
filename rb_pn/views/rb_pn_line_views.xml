@@ -49,7 +49,9 @@
                             <list string="Titles Paid">
                                 <field name="numero"/>
                                 <field name="data"/>
+                                <field name="premio_totale" />
                                 <field name="competenze"/>
+                                <field name="operazione" string="Status"/>
                             </list>
                         </field>
                     </page>

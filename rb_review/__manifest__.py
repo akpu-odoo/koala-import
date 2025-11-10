@@ -19,8 +19,8 @@
     # Dependency
     "depends": ['rb_pn', 'rb_titoli'],
     "data": [
-        # 'security/rb_titolo_groups.xml',
-        # "security/ir.model.access.csv",
+        'security/rb_titolo_groups.xml',
+        "security/ir.model.access.csv",
         "views/rb_titoli_views.xml",
     ],
     "installable": True,

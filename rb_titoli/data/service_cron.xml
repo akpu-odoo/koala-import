@@ -2,11 +2,23 @@
 <odoo>
     <record id="ir_cron_rb_titolo_get_titles" model="ir.cron">
         <field name="name">Import Koala Titles</field>
-        <field name="model_id" ref="rb_titoli.model_rb_titolo"/>
+        <field name="model_id" ref="rb_titoli.model_rb_titolo" />
         <field name="state">code</field>
         <field name="code">model._cron_koala_get_titles()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">days</field>
-        <field name="nextcall" eval="(DateTime.now().replace(hour=0, minute=5, second=0, microsecond=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="nextcall"
+            eval="(DateTime.now().replace(hour=0, minute=5, second=0, microsecond=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')" />
+    </record>
+
+    <record id="ir_cron_rb_titolo_process_titles" model="ir.cron">
+        <field name="name">Process all Koala Titles</field>
+        <field name="model_id" ref="rb_titoli.model_rb_titolo" />
+        <field name="state">code</field>
+        <field name="code">model._cron_process_koala_titles()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall"
+            eval="(DateTime.now().replace(hour=1, minute=5, second=0, microsecond=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')" />
     </record>
 </odoo>

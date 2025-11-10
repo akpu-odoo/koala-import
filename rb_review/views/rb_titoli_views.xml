@@ -9,7 +9,8 @@
                 <field name="data"/>
                 <field name="competenze"/>
                 <field name="review_state"/>
-                <filter string="Review" name="review" domain="[('review_state', '!=', 'reviewed')]"/>
+                <filter string="to_check or to_review" name="review" domain="[('review_state', '!=', 'reviewed')]"/>
+                <filter string="Archived" name="Archived" domain="[('active', '=', False)]"/>
             </search>
         </field>
     </record>
@@ -19,9 +20,11 @@
         <field name="model">rb.titolo</field>
         <field name="arch" type="xml">
             <list string="Titles for Review" default_order="review_state">
+                <field name="koala_titolo_id"/>
                 <field name="numero"/>
                 <field name="data"/>
                 <field name="competenze"/>
+                <field name="premio_totale"/>
                 <field name="review_state" widget="badge" />
                 <button name="action_update_title"
                     string="Update"
@@ -39,11 +42,21 @@
         <field name="arch" type="xml">
             <form string="Title Review" create="false">
                 <header>
+                    <div title="Koala Recipet is pending or there is an error.">
+
+                        <button name="action_mark_reviewed"
+                        string="Mark as Reviewed"
+                        type="object"
+                        class="oe_highlight"
+                        disabled="1"
+                        invisible="koala_reciept or review_state != 'to_check'"/>
+                    </div>
+
                     <button name="action_mark_reviewed"
                             string="Mark as Reviewed"
                             type="object"
                             class="oe_highlight"
-                            invisible="review_state != 'to_check'"/>
+                            invisible="review_state != 'to_check' or not koala_reciept"/>
 
                     <button name="action_flag_to_check"
                             string="Flag for Check"
@@ -74,9 +87,16 @@
                     <group>
                         <group colspan="2">
                             <group string="Title Information" >
+                                <field name="koala_titolo_id" readonly="1"/>
+                                <field name="koala_reciept" invisible="1"/>
                                 <field name="numero"/>
                                 <field name="data"/>
                                 <field name="competenze"/>
+                                <field name="partner_cliente_id"/>
+                                <field name="partner_collaboratore_id"/>
+                                <field name="premio_totale"/>
+                                <field name="resolved_partner_id"/>
+                                <field name="payment_responsibility"/>
                             </group>
 
                             <group string="Review Details">

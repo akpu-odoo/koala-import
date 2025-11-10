@@ -1,4 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_rb_titolo_reviewer,rb.titolo.reviewer,model_rb_titolo,rb_review.group_rb_titolo_reviewer,1,1,0,0
+access_rb_titolo_reviewer,rb.titolo.reviewer,model_rb_titolo,rb_review.group_rb_titolo_reviewer,1,0,0,0
 access_rb_titolo_reconciler,rb.titolo.reconciler,model_rb_titolo,rb_review.group_rb_titolo_reconciler,1,0,0,0
 access_rb_titolo_admin,rb.titolo.admin,model_rb_titolo,rb_review.group_rb_titolo_admin,1,1,1,1

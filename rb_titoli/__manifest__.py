@@ -16,12 +16,13 @@
     "website": "https://www.odoo.com",
     "license": "LGPL-3",
     # Dependency
-    "depends": ['account'],
+    "depends": ['account', 'mail'],
     "data": [
         "security/ir.model.access.csv",
+        "data/service_cron.xml",
+        "data/mail_activity_type_data.xml",
         "views/account_journal_views.xml",
         "views/res_config_settings_views.xml",
-        "data/service_cron.xml",
     ],
     "installable": True,
 }

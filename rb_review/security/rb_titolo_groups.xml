@@ -2,13 +2,13 @@
 <odoo>
     <!-- Reviewers -->
     <record id="group_rb_titolo_reviewer" model="res.groups">
-        <field name="name">Reviewers</field>
+        <field name="name">Title Reviewers</field>
         <field name="comment">Can change review state, edit review notes, refresh and export.</field>
     </record>
 
     <!-- Reconcilers -->
     <record id="group_rb_titolo_reconciler" model="res.groups">
-        <field name="name">Reconcilers</field>
+        <field name="name">Title Reconcilers</field>
         <field name="comment">Can retry alignment but cannot change review state.</field>
     </record>
 
